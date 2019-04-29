@@ -1,0 +1,123 @@
+---
+title: "Julia Hodge Revised Learning Group Project H"
+output: html_notebook
+---
+
+This is my revised portion for Learning Group Project H.
+
+```{r include = FALSE}
+
+library(tidyverse)
+
+hsb2 <- read_csv("hsb2.csv")
+
+```
+
+## Introduction
+
+In this report, I am interested in exploring how socioeconomic status and gender relate to math scores. I am particularly interested in whether or not there is an interaction between the two explanatory variables. 
+
+Research Question: *Is there an interaction between socioeconomic status and gender on math scores?*
+
+
+```{r include = FALSE}
+
+hsb2$ses <- factor(hsb2$ses, 
+                   labels = c("low", "middle", "high"))
+hsb2$gender <- factor(hsb2$female, 
+                      labels = c("male", "female"))
+
+HSB2 <- data.frame(hsb2$math, hsb2$gender, hsb2$ses)
+colnames (HSB2) <- c("math", "gender", "ses")
+
+summary(HSB2)
+
+```
+
+## Graphs and Statistics
+
+I started with side-by-side boxplots to visually explore the data. 
+
+```{r}
+
+ggplot(HSB2, aes(x = ses, y = math, fill = gender)) +
+  geom_boxplot() +
+  labs(title = "Math Scores by SES and Gender")
+
+```
+
+The plot implies that SES effects math scores, with students in the low SES category reporting lower math scores. The plot does not show an apparent gender effect. 
+
+Next, I created a model to research a possible interaction. Here are cell means and standard deviations of math scores for SES and gender, and marginal means. Indeed, the means for low SES levels are lower than the other two levels, regardless of gender.
+
+```{r}
+
+# build model
+interaction.model <- HSB2$math ~ HSB2$gender * HSB2$ses
+
+# cell means and sds
+tapply(HSB2$math,
+       list(HSB2$gender, HSB2$ses),
+       mean)
+tapply(HSB2$math,
+       list(HSB2$gender, HSB2$ses),
+       sd)
+
+# marginal means
+tapply(HSB2$math, HSB2$gender, mean)
+tapply(HSB2$math, HSB2$ses, mean)
+
+```
+
+Then, I created an interaction plot. 
+
+```{r}
+
+interaction.plot(HSB2$ses,
+                 HSB2$gender,
+                 response = HSB2$math,
+                 xlab = "SES Level",
+                 ylab = "Mean Math Scores",
+                 trace.label = "Gender")
+
+```
+
+Next, I checked the residual-fit plot and normal q-q plot. 
+
+```{r}
+
+results <- aov(interaction.model)
+plot(results, 1)
+plot(results, 2)
+
+```
+
+Recognizing the large sample size, I ran ANOVA. 
+
+```{r}
+
+anova.model <- anova(results)
+anova.model
+
+```
+
+Since ANOVA did not indicate an interaction of SES and gender, I chose to do further analysis on the relationship of SES and math scores. I ran a Tukey test and created a plot to look at confidence intervals. 
+
+```{r}
+
+aov <- lm(math ~ ses, data = hsb2)
+aov <- aov(aov)
+summary(aov)
+
+# pair comparison
+tukey.test <- TukeyHSD(aov)
+tukey.test
+
+plot(tukey.test)
+
+
+```
+
+## Conclusions
+
+From this study, I did not find an interaction between SES and gender on math scores. It appears that SES is associated with math scores given the differences in math score means for SES levels. The largest difference in means and therefore, the largest effect is between the low SES level and the high SES level. With a 95% confidence interval of mean differences, the math scores from students in the high SES level compared to the low SES level are between 2.8 and 11.2 points higher.   The stability of the p-value confirms this estimate.
